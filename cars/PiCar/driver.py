@@ -18,6 +18,7 @@ picar.setup()
 
 bw=picar.back_wheels.Back_Wheels()
 fw=picar.front_wheels.Front_Wheels()
+fw.turning_max=40
 pan_servo=Servo.Servo(1)
 tilt_servo=Servo.Servo(2)
 
