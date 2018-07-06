@@ -63,7 +63,9 @@ def send_stuff(sock, stuff):
     return totalsent
 
 
+#we're using a bunch of global variables. Should probably fix that in the future
 global image_frame 
+global commands
 global lock
 global emitter
 global client_socket_stream
@@ -72,11 +74,11 @@ global client_thread
 global stop_event
 global commands_out_thread
 
-class ImagePlayer(QMainWindow):
+class ClientGUI(QMainWindow):
 
     def __init__(self, parent=None):
         global emitter
-        super(ImagePlayer, self).__init__(parent)
+        super(ClientGUI, self).__init__(parent)
 
         self.image_label=QLabel()
         self.THR_label=QLabel("0")
@@ -89,9 +91,13 @@ class ImagePlayer(QMainWindow):
         start_button.clicked.connect(self.start_act)
         stop_button.clicked.connect(self.stop_act)
         layout=QGridLayout()
-        layout.addWidget(self.image_label, 0, 0, 1, 2)
-        layout.addWidget(start_button, 1, 0, 1, 1)
-        layout.addWidget(stop_button, 1, 1, 1, 1)
+        layout.addWidget(self.image_label, 0, 0, 3, 2)
+        layout.addWidget(QLabel("steering value: "), 0, 2, 1, 1)
+        layout.addWidget(self.THR_label, 0, 3, 1, 1)
+        layout.addWidget(QLabel("throttle value: "), 1, 2, 1, 1)
+        layout.addWidget(self.STR_label, 1, 3, 1, 1)
+        layout.addWidget(start_button, 3, 0, 1, 1)
+        layout.addWidget(stop_button, 3, 1, 1, 1)
         centralwidget=QWidget()
         centralwidget.setLayout(layout)
         self.setCentralWidget(centralwidget)
@@ -120,8 +126,11 @@ class ImagePlayer(QMainWindow):
     def update(self):
         global lock
         global image_frame
+        global commands
         lock.acquire()
         qimg=QImage(image_frame.getbuffer(), 128, 96, 128*3, QImage.Format_RGB888)
+        self.THR_label.setText(str(commands[1]))
+        self.STR_label.setText(str(commands[0]))
         lock.release()
         self.image_label.setPixmap(QPixmap.fromImage(qimg.mirrored(True, True).scaled(640, 480)))
 
@@ -136,13 +145,15 @@ class Emitter(QObject):
 
 def client_process(stop_ev, sock, emitter):
     global lock
+    global commands
     global image_frame
     try:
         while not stop_ev.isSet(): 
             image_data=struct.unpack('<Lhh', read_stuff(sock, struct.calcsize('<Lhh')).getbuffer())
-            lock.acquire() 
+            lock.acquire()
             image_frame=read_stuff(sock, image_data[0])
             image_frame.seek(0)
+            commands=(image_data[1], image_data[2])
             lock.release()
             emitter.new_image.emit()
         print("process shutting down now")
@@ -185,5 +196,5 @@ commands_out_thread=threading.Thread(target=commands_out_process, args=[stop_eve
 
 app=QApplication(sys.argv)
 app.aboutToQuit.connect(cleanup)
-player=ImagePlayer()
+player=ClientGUI()
 app.exec_()
