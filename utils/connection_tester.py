@@ -65,6 +65,33 @@ def send_stuff(sock, stuff):
         totalsent=totalsent+sent
     return totalsent
 
+class calibrationDialog(QDialog):
+
+    def __init__(self, commands_out_socket, parent=None):
+        super(calibrationDialog, self).__init__(parent)
+        self.comm_socket=commands_out_socket
+        left_button=QPushButton("Calibrate Left")
+        right_button=QPushButton("Calibrate Right")
+        ok_button=QPushButton("OK")
+        layout=QGridLayout()
+        layout.addWidget(left_button, 0, 0)
+        layout.addWidget(right_button, 0, 1)
+        layout.addWidget(ok_button, 1, 1)
+
+        self.ok_button.connect(self.accept)
+        self.left_button.connect(self.calib_left)
+        self.right_button.connect(self.calib_right)
+
+    def calib_left(self):
+        message_buf=struct.pack("IhBB", 0, 0, 3, 4) #calibration left message
+        print("sending calib left message")
+        send_stuff(self.comm_socket, message_buf) 
+
+    def calib_right(self):
+        message_buf=struct.pack("IhBB", 0, 0, 3, 5) #calibration right message
+        print("sending calib right message")
+        send_stuff(self.comm_socket, message_buf) 
+
 class ClientGUI(QMainWindow):
 
     def __init__(self, parent=None):
@@ -93,14 +120,12 @@ class ClientGUI(QMainWindow):
         self.setWindowTitle("Image Player")
         self.show()
 
-
     def stop_act(self):
         global stop_event
         global commands_out_thread
         stop_event.set()
         commands_out_thread.join()
         
-
     def start_act(self):
         global client_socket_commands
         global commands_out_thread
@@ -111,6 +136,7 @@ class ClientGUI(QMainWindow):
         global socket_lock
         global client_socket_commands 
         message_buf=struct.pack("IhBB", 0, 0, 3, 6) #data collection start message
+        print("sending start data collection message")
         socket_lock.acquire()
         send_stuff(commands_out_sock, message_buf) 
         socket_lock.release()
@@ -119,6 +145,7 @@ class ClientGUI(QMainWindow):
         global socket_lock
         global client_socket_commands 
         message_buf=struct.pack("IhBB", 0, 0, 3, 7) #data collection start message
+        print("sending stop data collection message")
         socket_lock.acquire()
         send_stuff(commands_out_sock, message_buf) 
         socket_lock.release()
@@ -129,7 +156,8 @@ class ClientGUI(QMainWindow):
         message_buf=struct.pack("IhBB", 0, 0, 3, 2) #data collection start message
         socket_lock.acquire()
         send_stuff(commands_out_sock, message_buf) 
-        #Call calibration window here
+        cali_dialog=calibrationDialog(client_socket_commands)
+        cali_dialog.exec_()
         message_buf=struct.pack("IhBB", 0, 0, 3, 3) #data collection start message
         send_stuff(commands_out_sock, message_buf) 
         socket_lock.release()
