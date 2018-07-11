@@ -77,10 +77,11 @@ class calibrationDialog(QDialog):
         layout.addWidget(left_button, 0, 0)
         layout.addWidget(right_button, 0, 1)
         layout.addWidget(ok_button, 1, 1)
+        self.setLayout(layout)
 
-        self.ok_button.connect(self.accept)
-        self.left_button.connect(self.calib_left)
-        self.right_button.connect(self.calib_right)
+        ok_button.clicked.connect(self.accept)
+        left_button.clicked.connect(self.calib_left)
+        right_button.clicked.connect(self.calib_right)
 
     def calib_left(self):
         message_buf=struct.pack("IhBB", 0, 0, 3, 4) #calibration left message
@@ -106,7 +107,7 @@ class ClientGUI(QMainWindow):
         stop_button.clicked.connect(self.stop_act)
         dcoll_button.clicked.connect(self.dcoll_act)
         sdcoll_button.clicked.connect(self.sdcoll_act)
-        calib_button.clicket.connnect(self.calib_act)
+        calib_button.clicked.connect(self.calib_act)
         layout=QGridLayout()
         layout.addWidget(start_button, 0, 0)
         layout.addWidget(stop_button, 0, 1)
@@ -123,8 +124,11 @@ class ClientGUI(QMainWindow):
     def stop_act(self):
         global stop_event
         global commands_out_thread
+        global client_socket_commands
         stop_event.set()
         commands_out_thread.join()
+        client_socket_commands.close()
+
         
     def start_act(self):
         global client_socket_commands
@@ -138,7 +142,7 @@ class ClientGUI(QMainWindow):
         message_buf=struct.pack("IhBB", 0, 0, 3, 6) #data collection start message
         print("sending start data collection message")
         socket_lock.acquire()
-        send_stuff(commands_out_sock, message_buf) 
+        send_stuff(client_socket_commands, message_buf) 
         socket_lock.release()
 
     def sdcoll_act(self):
@@ -147,7 +151,7 @@ class ClientGUI(QMainWindow):
         message_buf=struct.pack("IhBB", 0, 0, 3, 7) #data collection start message
         print("sending stop data collection message")
         socket_lock.acquire()
-        send_stuff(commands_out_sock, message_buf) 
+        send_stuff(client_socket_commands, message_buf) 
         socket_lock.release()
 
     def calib_act(self):
@@ -155,15 +159,16 @@ class ClientGUI(QMainWindow):
         global client_socket_commands 
         message_buf=struct.pack("IhBB", 0, 0, 3, 2) #data collection start message
         socket_lock.acquire()
-        send_stuff(commands_out_sock, message_buf) 
+        send_stuff(client_socket_commands, message_buf) 
         cali_dialog=calibrationDialog(client_socket_commands)
         cali_dialog.exec_()
         message_buf=struct.pack("IhBB", 0, 0, 3, 3) #data collection start message
-        send_stuff(commands_out_sock, message_buf) 
+        send_stuff(client_socket_commands, message_buf) 
         socket_lock.release()
 
 
 socket_lock=threading.Lock()
+stop_event=threading.Event()
 
 joystick_file='/dev/input/js0'
 js_out=open(joystick_file, 'rb')
@@ -174,11 +179,12 @@ def commands_out_process(stop_event, js_out, commands_out_sock):
     try: 
         while not stop_event.isSet():
             evbuf=js_out.read(8)
-            if evbuf and not calib_flag:
+            if evbuf:
                 time, value, in_type, in_id=struct.unpack('IhBB', evbuf)
                 print(in_type, in_id) 
                 socket_lock.acquire()
                 send_stuff(commands_out_sock, evbuf) 
+                print("stuff sent")
                 socket_lock.release()
                 if in_type==1 and button_names[in_id]=='xbox' and value==1:
                     stop_event.set()
@@ -190,3 +196,7 @@ def commands_out_process(stop_event, js_out, commands_out_sock):
 
 client_socket_commands=socket.socket() 
 commands_out_thread=threading.Thread(target=commands_out_process, args=[stop_event, js_out, client_socket_commands])
+
+app=QApplication(sys.argv)
+player=ClientGUI()
+app.exec_()
