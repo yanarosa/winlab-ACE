@@ -14,6 +14,7 @@ from PyQt5.QtCore import *
 
 sys.path.append('/home/pi/winlab-ACE/cars/PiCar')
 from socket_wrapper import *
+from calibrationDialog import calibrationDialog
 
 if len(sys.argv)!=2:
     print("must include ip address of car as command line argument")
@@ -81,8 +82,11 @@ class ClientGUI(QMainWindow):
         layout.addWidget(self.THR_label, 0, 3, 1, 1)
         layout.addWidget(QLabel("throttle value: "), 1, 2, 1, 1)
         layout.addWidget(self.STR_label, 1, 3, 1, 1)
+        layout.addWidget(dc_start, 2, 2, 1, 1)
+        layout.addWidget(dc_start, 2, 3, 1, 1)
         layout.addWidget(start_button, 3, 0, 1, 1)
         layout.addWidget(stop_button, 3, 1, 1, 1)
+        layout.addWidget(calib_button, 3, 2, 1, 1)
         centralwidget=QWidget()
         centralwidget.setLayout(layout)
         self.setCentralWidget(centralwidget)
@@ -135,7 +139,6 @@ class ClientGUI(QMainWindow):
         send_stuff(client_socket_commands, message_buf)
         command_lock.release()
 
-
     def update(self):
         global data_lock
         global image_frame
@@ -150,10 +153,14 @@ class ClientGUI(QMainWindow):
     def calibrate(self):
         global client_socket_commands
         global command_lock
-
-
-
-
+        message_buf=struct.pack("IhBB", 0, 0, 3, 2) #calibration start message
+        command_lock.acquire()
+        send_stuff(client_socket_commands, message_buf)
+        cali_dialog=calibrationDialog(client_socket_commands)
+        cali_dialog.exec_()
+        message_buf=struct.pack("IhBB", 0, 0, 3, 3) #calibration stop message
+        send_stuff(client_socket_commands, message_buf)
+        command_lock.release()
 
 def cleanup():
         global client_socket_stream
