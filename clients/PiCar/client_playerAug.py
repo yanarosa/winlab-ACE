@@ -75,6 +75,10 @@ class ClientGUI(QMainWindow):
         calib_button=QPushButton("calibrate")
         start_button.clicked.connect(self.start_act)
         stop_button.clicked.connect(self.stop_act)
+        dc_start.clicked.connect(self.start_dc)
+        dc_stop.clicked.connect(self.stop_dc)
+        calib_button.clicked.connect(self.calibrate)
+
 
         layout=QGridLayout()
         layout.addWidget(self.image_label, 0, 0, 3, 2)
@@ -83,7 +87,7 @@ class ClientGUI(QMainWindow):
         layout.addWidget(QLabel("throttle value: "), 1, 2, 1, 1)
         layout.addWidget(self.STR_label, 1, 3, 1, 1)
         layout.addWidget(dc_start, 2, 2, 1, 1)
-        layout.addWidget(dc_start, 2, 3, 1, 1)
+        layout.addWidget(dc_stop, 2, 3, 1, 1)
         layout.addWidget(start_button, 3, 0, 1, 1)
         layout.addWidget(stop_button, 3, 1, 1, 1)
         layout.addWidget(calib_button, 3, 2, 1, 1)
@@ -98,8 +102,9 @@ class ClientGUI(QMainWindow):
         global stop_event
         global stream_in_thread
         global commands_out_thread
+        global command_lock
         stop_event.set() #event to stop threads
-        commands_out_thread.join() #join command thread after setting stop event. This thread should return no problem.
+        commands_out_thread.join() #TODO FIXME this thread does NOT join no problem
         message_buf=struct.pack("IhBB", 0, 0, 3, 1)#stream stop command
         command_lock.acquire()
         send_stuff(client_socket_commands, message_buf)
@@ -111,6 +116,7 @@ class ClientGUI(QMainWindow):
         global client_socket_commands
         global stream_in_thread
         global commands_out_thread
+        global command_lock
         #TBH, initiating a stream with a command over the other socket is a little unnecessary. As long as we know what
         #order to connect, we shouldn't need to specify to start the stream
         client_socket_commands.connect((car_ip, 8005)) #connect to command socket first
@@ -217,6 +223,7 @@ js_out=open(joystick_file, 'rb')
 #define global variables:
 emitter=Emitter() #used to emit signal when there is a new image
 data_lock=threading.Lock() #lock for using image_frame buffer
+command_lock=threading.Lock()
 image_frame=io.BytesIO() #buffer for image data
 stop_event=threading.Event()
 client_socket_stream=socket.socket() 
