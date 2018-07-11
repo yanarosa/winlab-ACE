@@ -7,6 +7,7 @@ import datetime
 import picamera
 import threading
 
+sys.path.append('/home/pi/winlab-ACE/cars/PiCar')
 from socket_wrapper import *
 
 button_names={0:'A',
@@ -33,6 +34,7 @@ commands_server=socket.socket()
 commands_server.bind(('', 8005))
 commands_server.listen(0)
 (commands_in_sock, address)=commands_server.accept()
+print(address)
 
 
 stop_event=threading.Event()
