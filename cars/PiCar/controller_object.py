@@ -81,6 +81,8 @@ class ControllerObject(object):
                     self.carlock.release()
                 elif in_type==1:
                     print("button", button_names[in_id])
+                elif in_type==3:
+                    print("command", in_id)
 
     def stop_thread(self):
         #stops the thread. This must be called even if the thread terminates 

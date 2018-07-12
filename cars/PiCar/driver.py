@@ -33,12 +33,12 @@ tilt_servo.write(90)
 
 time_format='%Y-%m-%d_%H-%M-%S'
 
-stream_server=socket.socket()
 commands_server=socket.socket()
-stream_server.bind(('', 8000))
+stream_server=socket.socket()
 commands_server.bind(('', 8005))
-stream_server.listen(0)
+stream_server.bind(('', 8000))
 commands_server.listen(0)
+stream_server.listen(0)
 (commands_in_sock, address)=commands_server.accept()
 (stream_out_sock, address)=stream_server.accept()
 
