@@ -4,6 +4,7 @@ import sys
 import time
 import struct
 import threading
+from observer import Flag
 
 JS_MAX_ANALOG=32767
 JS_MIN_ANALOG=-32768
@@ -12,6 +13,15 @@ PAN_ANGLE_MIN=10
 PAN_ANGLE_MAX=170
 TILT_ANGLE_MIN=70
 TILT_ANGLE_MAX=150
+
+command_names={0: 'start_stream', 
+        1: 'stop_stream',
+        2: 'calib_start',
+        3: 'calib_stop',
+        4: 'calib_left',
+        5: 'calib_right',
+        6: 'dc_start',
+        7: 'dc_stop'}
 
 button_names={0:'A',
         1:'B',
@@ -80,9 +90,10 @@ class ControllerObject(object):
                     self.quit_flag=True
                     self.carlock.release()
                 elif in_type==1:
-                    print("button", button_names[in_id])
+                    #print("button", button_names[in_id])
                 elif in_type==3:
-                    print("command", in_id)
+                    Flag(command_names[in_id], {})
+                    #print("command", in_id)
 
     def stop_thread(self):
         #stops the thread. This must be called even if the thread terminates 
