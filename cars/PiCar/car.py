@@ -1,3 +1,4 @@
+import sys
 from observer import *
 
 sys.path.append('/home/pi/Sunfounder_PiCar')
@@ -36,13 +37,14 @@ class car(Observer):
 
     def calib_start(self, flag):
         self.calib_flag=True
+        self.fw.calibration()
 
     def calib_stop(self, flag):
         self.calib_flag=False
-        self.front_wheels.cali_ok()
+        self.fw.cali_ok()
 
     def cali_left(self, flag):
-        self.front_wheels.cali_left()
+        self.fw.cali_left()
 
     def cali_right(self, flag):
-        self.front_wheels.cali_right()
+        self.fw.cali_right()

@@ -89,8 +89,6 @@ class ControllerObject(object):
                     self.carlock.acquire()
                     self.quit_flag=True
                     self.carlock.release()
-                elif in_type==1:
-                    #print("button", button_names[in_id])
                 elif in_type==3:
                     Flag(command_names[in_id], {})
                     #print("command", in_id)

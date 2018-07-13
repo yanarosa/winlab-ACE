@@ -10,6 +10,7 @@ import threading
 from car import car
 from controller_object import ControllerObject
 from socket_wrapper import *
+from observer import *
 sys.path.append('/home/pi/Sunfounder_PiCar')
 from picar.SunFounder_PCA9685 import Servo
 
@@ -72,7 +73,7 @@ def server_process(stop_ev, sock, stream):
     except socket.error:
         print("connection broken, client no longer recieving")
         print(datetime.datetime.now().strftime(time_format))
-        stop_ev.stop()
+        stop_ev.stop(None)
 
 carlos=car() #initialize car object
 tc=termCondition()
