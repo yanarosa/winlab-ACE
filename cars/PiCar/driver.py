@@ -11,6 +11,7 @@ from car import car
 from controller_object import ControllerObject
 from socket_wrapper import *
 from observer import *
+from streamer import *
 sys.path.append('/home/pi/Sunfounder_PiCar')
 from picar.SunFounder_PCA9685 import Servo
 
@@ -53,27 +54,16 @@ class termCondition(Observer):
 
 
 def server_process(stop_ev, sock, stream):
-    try:
-        while not stop_ev.isSet():
-            if stream.tell()!=0:
-                imsize=stream.tell()
-                commands_lock.acquire()
-                THR, STR=car_commands
-                commands_lock.release()
-                send_stuff(sock, struct.pack('<Lhh', imsize, THR, STR))
-                stream.seek(0)
-                nsent=send_stuff(sock, stream.read())
-                if nsent==-1:
-                    print("client closed connection, stopping")
-                    stop_ev.set()
-                stream.seek(0)
-                stream.truncate()
-            time.sleep(.0001)
-        #send_stuff(client_socket, struct.pack('<L', 0))
-    except socket.error:
-        print("connection broken, client no longer recieving")
-        print(datetime.datetime.now().strftime(time_format))
-        stop_ev.stop(None)
+    while not stop_ev.isSet():
+        if stream.tell()!=0:
+            commands_lock.acquire()
+            THR, STR=car_commands
+            commands_lock.release()
+            Flag("new_data", {"image":stream, "THR":THR, "STR":STR})
+            stream.seek(0)
+            stream.truncate()
+        time.sleep(.0001)
+
 
 carlos=car() #initialize car object
 tc=termCondition()
@@ -82,6 +72,7 @@ js_source=SocketReader(commands_in_sock) #joystick input from socket
 server_thread=threading.Thread(target=server_process, args=[tc, stream_out_sock, stream])
 controller=ControllerObject(js_source) #controller handler
 controller.start_thread()
+streamer=Streamer(stream_out_sock)
 
 
 try:
